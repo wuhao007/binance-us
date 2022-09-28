@@ -9,6 +9,8 @@ class BinanceUs:
 
     def __init__(self): 
         self.api_url = 'https://api.binance.us'
+        self.headers = {}
+        self.headers['X-MBX-APIKEY'] = self.api_key}
 
     # get binanceus signature 
     def get_binanceus_signature(self, data):
@@ -19,16 +21,34 @@ class BinanceUs:
         return mac
 
     # Attaches auth headers and returns results of a POST request
-    def binanceus_request(self, uri_path, snapshot_type=None, recv_window=None, symbol=None, side=None, order_type=None, quantity=None):
-        self.headers = {}
-        self.headers['X-MBX-APIKEY'] = self.api_key
-        data = {
-           "timestamp": int(round(time.time() * 1000)),
-        }
+    def GetData(self):
+        return {"timestamp": int(round(time.time() * 1000))}
+
+    # Attaches auth headers and returns results of a POST request
+    def GetParams(self, data):
+        signature = self.get_binanceus_signature(data)
+        return {
+            **data,
+            "signature": signature,
+        }          
+
+    def binanceus_get_request(self, uri_path, snapshot_type=None, recv_window=None, order_id=None, symbol=None):
+        data = self.GetData()
         if snapshot_type:
             data['type'] = snapshot_type
         if recv_window:
             data['recvWindow'] = recv_window
+        if order_id:
+            data['orderId'] = order_id
+        if symbol:
+            data['symbol'] = symbol
+        params = self.GetParams(data)
+        req = requests.get((self.api_url + uri_path), params=params, headers=self.headers)
+        print("GET {}: {}".format(uri_path, req))
+        return req.text
+
+    def binanceus_post_request(self, uri_path, symbol=None, side=None, order_type=None, quantity=None):
+        data = self.GetData()
         if symbol:
             data['symbol'] = symbol
         if side:
@@ -37,69 +57,67 @@ class BinanceUs:
             data['type'] = order_type
         if quantity:
             data['quantity'] = quantity
-        signature = self.get_binanceus_signature(data)
-        self.params = {
-            **data,
-            "signature": signature,
-        }          
-
-    def binanceus_get_request(self, uri_path, snapshot_type=None, recv_window=None):
-        self.binanceus_request(uri_path, snapshot_type=snapshot_type, recv_window=recv_window)
-        req = requests.get((self.api_url + uri_path), params=self.params, headers=self.headers)
-        print("GET {}: {}".format(uri_path, req))
+        params = self.GetParams(data)
+        req = requests.post((self.api_url + uri_path), headers=self.headers, data=params)
+        print("POST {}: {}".format(uri_path, req))
         return req.text
 
-    def binanceus_post_request(self, uri_path, symbol=None, side=None, order_type=None, quantity=None):
-        self.binanceus_request(uri_path, symbol=symbol, side=side, order_type=order_type, quantity=quantity)
-        req = requests.post((self.api_url + uri_path), headers=self.headers, data=self.params)
-        print("POST {}: {}".format(uri_path, req))
+    def binanceus_delete_request(self, uri_path, symbol=None, order_id=None):
+        data = self.GetData()
+        if symbol:
+            data['symbol'] = symbol
+        if order_id:
+            data['orderId'] = order_id
+        params = self.GetParams(data)
+        req = requests.delete((self.api_url + uri_path), params=params, headers=self.headers)
+        print("DELETE {}: {}".format(uri_path, req))
         return req.text
 
     def request(self, endpoint, headers={}):
         resp = requests.get(self.api_url + '/api/v3/' + endpoint, headers=headers)
         return resp.json()
 
+    def AddSymbol(self, symbol):
+        return f'?symbol={symbol}' if symbol else ''
+
     def TestConnectivity(self):
         return self.request('ping')
 
     def GetServerTime(self):
-        return request('time')
+        return self.request('time')
 
     def GetExchangeInformation(self):
-        return request('exchangeInfo')
+        return self.request('exchangeInfo')
 
     def GetRecentTrades(self, symbol):
-        return request(f'trades?symbol={symbol}')
+        return self.request(f'trades?symbol={symbol}')
 
     def GetHistoricalTrades(self, symbol):
-        return request(f'historicalTrades?symbol={symbol}', {'X-MBX-APIKEY': self.api_key})
+        return self.request(f'historicalTrades?symbol={symbol}', {'X-MBX-APIKEY': self.api_key})
 
     def GetAggregateTrades(self, symbol):
-        return request(f'aggTrades?symbol={symbol}')
+        return self.request(f'aggTrades?symbol={symbol}')
 
     def GetOrderBookDepth(self, symbol):
-        return request(f'depth?symbol={symbol}')
+        return self.request(f'depth?symbol={symbol}')
 
     def GetCandlestickData(self, symbol, interval):
-        return request(f'klines?symbol={symbol}&interval={interval}')
-
-    def AddSymbol(self, symbol):
-        return f'?symbol={symbol}' if symbol else ''
+        return self.request(f'klines?symbol={symbol}&interval={interval}')
 
     def GetLiveTickerPrice(self, symbol=None):
-        return request('ticker/price' + self.AddSymbol(symbol))
+        return self.request('ticker/price' + self.AddSymbol(symbol))
 
     def GetAveragePrice(self, symbol):
-        return request(f'avgPrice?symbol={symbol}')
+        return self.request(f'avgPrice?symbol={symbol}')
 
     def GetBestOrderBookPrice(self, symbol=None):
-        return request('ticker/bookTicker' + self.AddSymbol(symbol))
+        return self.request('ticker/bookTicker' + self.AddSymbol(symbol))
 
     def Get24hPriceChangeStatistics(self, symbol=None):
-        return request('ticker/24hr' + self.AddSymbol(symbol))
+        return self.request('ticker/24hr' + self.AddSymbol(symbol))
 
     def GetRollingWindowPriceChangeStatistics(self, symbol=None):
-        return request('ticker' + self.AddSymbol(symbol))
+        return self.request('ticker' + self.AddSymbol(symbol))
     
     def GetSystemStatus(self):
         return self.binanceus_get_request("/sapi/v1/system/status")
@@ -143,6 +161,21 @@ class BinanceUs:
     def TestNewOrder(self, symbol, side, order_type, quantity):
         return self.binanceus_post_request('/api/v3/order/test', symbol=symbol, side=side, order_type=order_type, quantity=quantity)
 
+    def GetOrder(self, symbol, order_id=None):
+        return self.binanceus_get_request('/api/v3/order', symbol=symbol, order_id=order_id)
+
+    def GetAllOpenOrders(self):
+        return self.binanceus_get_request('/api/v3/openOrders')
+
+    def CancelOrder(self, symbol, order_id=None):
+        return self.binanceus_delete_request('/api/v3/order', symbol=symbol, order_id=order_id)
+
+    def CancelOpenOrdersForSymbol(self, symbol):
+        return self.binanceus_delete_request('/api/v3/openOrders', symbol=symbol)
+
+    def GetTrades(self, symbol):
+        return self.binanceus_get_request('/api/v3/myTrades', symbol=symbol)
+
 
 def main():
     binance_us = BinanceUs()
@@ -172,6 +205,11 @@ def main():
     # print(binance_us.GetOrderRateLimits())
     # print(binance_us.CreateNewOrder())
     print(binance_us.TestNewOrder('BTCUSD', 'BUY', 'MARKET', 1.1))
+    print(binance_us.GetOrder('BTCUSD'))
+    print(binance_us.GetAllOpenOrders())
+    print(binance_us.CancelOrder('BTCUSD'))
+    print(binance_us.CancelOpenOrdersForSymbol('BTCUSD'))
+    print(binance_us.GetTrades('BTCUSD'))
 
 
 
