@@ -7,12 +7,12 @@ class TestCoinGeckoMethods(unittest.TestCase):
     def setUp(self) -> None:
         super().setUp()
         self.coin_gecko = coingecko.CoinGecko('ETH/USD')
-        self.coin_gecko.update()
+        self.coin_gecko.GetPrices()
 
     def test_get_coingecko(self) -> None:
 
         # print('last price', self.coin_gecko.prices)
-        ahr999, ahr999_120 = self.coin_gecko.get_coingecko()
+        ahr999, ahr999_120 = self.coin_gecko.GetHaowu999()
         self.assertEqual(ahr999 < 1.2, True)
         # self.assertEqual(1000 < ahr999_045 < 2000, True)
         self.assertEqual(2000 < ahr999_120 < 6000, True)
@@ -30,6 +30,6 @@ class TestCoinGeckoMethods(unittest.TestCase):
         self.assertEqual(last_price[1], 1109.7)
         self.assertEqual(num_days + 1, self.coin_gecko.prices.shape[0])
 
-        ahr999, ahr999_120 = self.coin_gecko.get_coingecko()
+        ahr999, ahr999_120 = self.coin_gecko.GetHaowu999()
         self.assertEqual(ahr999 < 1.2, True)
         self.assertEqual(2000 < ahr999_120 < 6000, True)
