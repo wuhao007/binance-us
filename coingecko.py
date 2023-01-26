@@ -67,7 +67,7 @@ class CoinGecko(object):
 
     def GetMarketChart(self, vs_currency: str) -> List[Tuple[float, float]]:
         resp = requests.get(
-            f'https://api.coingecko.com/api/v3/coins/{self.coin}/market_chart?vs_currency={vs_currency}&days=36500&interval=hourly'
+            f'https://api.coingecko.com/api/v3/coins/{self.coin}/market_chart?vs_currency={vs_currency}&days=max'
         )
         self.prices = np.array([price for price in resp.json()['prices'] if price[1]])
 

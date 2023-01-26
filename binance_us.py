@@ -4,13 +4,14 @@ import hashlib
 import hmac
 import base64
 import time
+import sys
 
 class BinanceUs:
 
     def __init__(self): 
         self.api_url = 'https://api.binance.us'
         self.headers = {}
-        self.headers['X-MBX-APIKEY'] = self.api_key}
+        self.headers['X-MBX-APIKEY'] = self.api_key
 
     # get binanceus signature 
     def get_binanceus_signature(self, data):
@@ -47,7 +48,7 @@ class BinanceUs:
         print("GET {}: {}".format(uri_path, req))
         return req.text
 
-    def binanceus_post_request(self, uri_path, symbol=None, side=None, order_type=None, quantity=None):
+    def binanceus_post_request(self, uri_path, symbol=None, side=None, order_type=None, quantity=None, quote_order_qty=None):
         data = self.GetData()
         if symbol:
             data['symbol'] = symbol
@@ -57,6 +58,8 @@ class BinanceUs:
             data['type'] = order_type
         if quantity:
             data['quantity'] = quantity
+        if quote_order_qty:
+            data['quoteOrderQty'] = quote_order_qty
         params = self.GetParams(data)
         req = requests.post((self.api_url + uri_path), headers=self.headers, data=params)
         print("POST {}: {}".format(uri_path, req))
@@ -155,11 +158,11 @@ class BinanceUs:
     def GetOrderRateLimits(selfi, recv_window=None):
         return self.binanceus_get_request('/api/v3/rateLimit/order', recv_window=recv_window)
 
-    def CreateNewOrder(self, symbol, side, order_type, quantity):
-        return self.binanceus_post_request('/api/v3/order', symbol=symbol, side=side, order_type=order_type, quantity=quantity)
+    def CreateNewOrder(self, symbol, side, order_type, quantity, quote_order_qty):
+        return self.binanceus_post_request('/api/v3/order', symbol=symbol, side=side, order_type=order_type, quantity=quantity, quote_order_qty=quote_order_qty)
 
-    def TestNewOrder(self, symbol, side, order_type, quantity):
-        return self.binanceus_post_request('/api/v3/order/test', symbol=symbol, side=side, order_type=order_type, quantity=quantity)
+    def TestNewOrder(self, symbol, side, order_type, quantity, quote_order_qty):
+        return self.binanceus_post_request('/api/v3/order/test', symbol=symbol, side=side, order_type=order_type, quantity=quantity, quote_order_qty=quote_order_qty)
 
     def GetOrder(self, symbol, order_id=None):
         return self.binanceus_get_request('/api/v3/order', symbol=symbol, order_id=order_id)
@@ -192,8 +195,8 @@ def main():
     # print(binance_us.GetBestOrderBookPrice('BTCUSD'))
     # print(binance_us.Get24hPriceChangeStatistics('BTCUSD'))
     # print(binance_us.GetRollingWindowPriceChangeStatistics('BTCUSD'))
-    print(binance_us.GetSystemStatus())
-    print(binance_us.GetUserAccountInformation)
+    # print(binance_us.GetSystemStatus())
+    # print(binance_us.GetUserAccountInformation)
     # print(binance_us.GetUserAccountStatus())
     # print(binance_us.GetUserAPITradingStatus())
     # print(binance_us.GetAssetDistributionHistory())
@@ -203,13 +206,19 @@ def main():
     # print(binance_us.GetTradeFee())
     # print(binance_us.GetPast30daysTradeVolume())
     # print(binance_us.GetOrderRateLimits())
-    # print(binance_us.CreateNewOrder())
-    print(binance_us.TestNewOrder('BTCUSD', 'BUY', 'MARKET', 1.1))
-    print(binance_us.GetOrder('BTCUSD'))
-    print(binance_us.GetAllOpenOrders())
-    print(binance_us.CancelOrder('BTCUSD'))
-    print(binance_us.CancelOpenOrdersForSymbol('BTCUSD'))
-    print(binance_us.GetTrades('BTCUSD'))
+    symbol, during = sys.argv[1], sys.argv[2]
+
+    while True:
+        # print(binance_us.CreateNewOrder())
+        # print(binance_us.TestNewOrder('BTCUSD', 'BUY', 'MARKET', None, 10))
+        print(binance_us.TestNewOrder(symbol, 'BUY', 'MARKET', None, 10))
+        #sleep(11320.75472)
+        time.sleep(float(during))
+    # print(binance_us.GetOrder('BTCUSD'))
+    # print(binance_us.GetAllOpenOrders())
+    # print(binance_us.CancelOrder('BTCUSD'))
+    # print(binance_us.CancelOpenOrdersForSymbol('BTCUSD'))
+    # print(binance_us.GetTrades('BTCUSD'))
 
 
 
