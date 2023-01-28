@@ -1,3 +1,4 @@
+import coingecko
 import requests
 import urllib.parse
 import hashlib
@@ -5,6 +6,8 @@ import hmac
 import base64
 import time
 import sys
+import os
+
 
 class BinanceUs:
 
@@ -155,7 +158,7 @@ class BinanceUs:
     def GetSubAccountInformation(self):
         return self.binanceus_get_request('/sapi/v3/sub-account/list')
 
-    def GetOrderRateLimits(selfi, recv_window=None):
+    def GetOrderRateLimits(self, recv_window=None):
         return self.binanceus_get_request('/api/v3/rateLimit/order', recv_window=recv_window)
 
     def CreateNewOrder(self, symbol, side, order_type, quantity, quote_order_qty):
@@ -178,6 +181,21 @@ class BinanceUs:
 
     def GetTrades(self, symbol):
         return self.binanceus_get_request('/api/v3/myTrades', symbol=symbol)
+
+    def WriteState(self, symbol):
+        with open(symbol, 'w') as f:
+            pass
+
+    def MinOrder(self, symbol):
+        print(self.TestNewOrder(symbol, 'BUY', 'MARKET', None, 10))
+        # self.CreateNewOrder(symbol, 'BUY', 'MARKET', None, 10))
+        self.WriteState(symbol)
+
+    def DcaOrder(self, symbol):
+        if os.path.exists(symbol):
+            os.remove(symbol)
+        else:
+            self.MinOrder(symbol)
 
 
 def main():
@@ -206,20 +224,20 @@ def main():
     # print(binance_us.GetTradeFee())
     # print(binance_us.GetPast30daysTradeVolume())
     # print(binance_us.GetOrderRateLimits())
-    symbol, during = sys.argv[1], sys.argv[2]
+    symbol = sys.argv[1]
+    coin_gecko = coingecko.CoinGecko(symbol)
+    coin_gecko.GetPrices()
+    ahr999, ahr999_120, ahr999_045 = coin_gecko.GetHaowu999()
 
-    while True:
-        # print(binance_us.CreateNewOrder())
-        # print(binance_us.TestNewOrder('BTCUSD', 'BUY', 'MARKET', None, 10))
-        print(binance_us.TestNewOrder(symbol, 'BUY', 'MARKET', None, 10))
-        #sleep(11320.75472)
-        time.sleep(float(during))
-    # print(binance_us.GetOrder('BTCUSD'))
-    # print(binance_us.GetAllOpenOrders())
-    # print(binance_us.CancelOrder('BTCUSD'))
-    # print(binance_us.CancelOpenOrdersForSymbol('BTCUSD'))
-    # print(binance_us.GetTrades('BTCUSD'))
+    symbol_name = symbol.replace('/', '')
+    res = binance_us.GetLiveTickerPrice(symbol_name)
 
+    live_ticker_price = float(res['price'])
+
+    if live_ticker_price < ahr999_045:
+        binance_us.MinOrder(symbol_name)
+    elif live_ticker_price < ahr999_120:
+        binance_us.DcaOrder(symbol_name)
 
 
 if __name__ == '__main__':

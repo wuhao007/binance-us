@@ -92,7 +92,10 @@ class CoinGecko(object):
         ratio = 1.2
         ahr999_120 = self.GetAns(ratio)
         print(f'ahr999={ratio}: {ahr999_120} USD')
-        return ahr999, ahr999_120
+        ratio = 0.45
+        ahr999_045 = self.GetAns(ratio)
+        print(f'ahr999={ratio}: {ahr999_045} USD')
+        return ahr999, ahr999_120, ahr999_045
 
     def GetAhr999(self) -> float:
         end_item = self.prices_200[-1]
